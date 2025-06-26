@@ -9,18 +9,6 @@ jobs:
   test:
     name: Run Tests
     runs-on: arc-population-set
-    services:
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:9.0.2
-        env:
-          discovery.type: single-node
-        options: >-
-          --health-cmd "curl http://localhost:9200/_cluster/health"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-        ports:
-        - 9200:9200
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -36,3 +24,7 @@ jobs:
         run: go mod download
       - name: Generate test coverage
         run: go test ./... -coverprofile=./cover.out -covermode=atomic
+        env:
+          ELASTICSEARCH_URL: https://quickstart-es-http.apps:9200
+          ELASTICSEARCH_USERNAME: elastic
+          ELASTICSEARCH_PASSWORD: ${{ secrets.ELASTICSEARCH_PASSWORD }}
