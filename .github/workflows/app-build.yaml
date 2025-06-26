@@ -21,6 +21,6 @@ jobs:
       - name: Run tests
         run: go test ./... -coverprofile=./cover.out -covermode=atomic
         env:
-          ES_URL: https://quickstart-es-http.apps:9200
+          ES_URL: https://elasticsearch.totokwa.com
           ES_USERNAME: elastic
           ES_PASSWORD: ${{ secrets.ELASTICSEARCH_PASSWORD }}
