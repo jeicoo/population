@@ -19,6 +19,10 @@ type City struct {
 	Population int    `json:"population"`
 }
 
+type Response struct {
+	Message string `json:"message"`
+}
+
 func main() {
 	cfg := elasticsearch.Config{
 		Addresses: []string{
@@ -40,11 +44,17 @@ func main() {
 	}
 
 	http.HandleFunc("/health", healthHandler)
-	http.HandleFunc("/city", cityHandler)
-	http.HandleFunc("/population", populationHandler)
+	http.Handle("/city", accessLogMiddleware(http.HandlerFunc(cityHandler)))
+	http.Handle("/population", accessLogMiddleware(http.HandlerFunc(populationHandler)))
 
 	fmt.Println("Server started on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+func writeResponse(w http.ResponseWriter, response Response, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(response)
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -53,13 +63,15 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 
 func cityHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+		writeResponse(w,
+			Response{Message: "Only POST allowed"},
+			http.StatusMethodNotAllowed)
 		return
 	}
 
 	var city City
 	if err := json.NewDecoder(r.Body).Decode(&city); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		writeResponse(w, Response{Message: "Invalid JSON"}, http.StatusBadRequest)
 		return
 	}
 
@@ -73,29 +85,32 @@ func cityHandler(w http.ResponseWriter, r *http.Request) {
 		es.Index.WithRefresh("true"),
 	)
 	if err != nil {
-		http.Error(w, "Error indexing document", http.StatusInternalServerError)
+		writeResponse(w, Response{Message: "Error indexing document"}, http.StatusInternalServerError)
 		return
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		http.Error(w, fmt.Sprintf("Indexing error: %s", res.String()), http.StatusInternalServerError)
+		writeResponse(w,
+			Response{
+				Message: fmt.Sprintf("Indexing error: %s", res.String()),
+			},
+			http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("City stored/updated successfully"))
+	writeResponse(w, Response{Message: "City stored/updated successfully"}, http.StatusOK)
 }
 
 func populationHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Only GET allowed", http.StatusMethodNotAllowed)
+		writeResponse(w, Response{Message: "Only GET allowed"}, http.StatusMethodNotAllowed)
 		return
 	}
 
 	cityName := r.URL.Query().Get("name")
 	if cityName == "" {
-		http.Error(w, "City name required", http.StatusBadRequest)
+		writeResponse(w, Response{Message: "City name required"}, http.StatusBadRequest)
 		return
 	}
 
@@ -103,13 +118,13 @@ func populationHandler(w http.ResponseWriter, r *http.Request) {
 
 	res, err := es.Get("cities", docID)
 	if err != nil {
-		http.Error(w, "Error retrieving document", http.StatusInternalServerError)
+		writeResponse(w, Response{Message: "Error retrieving document"}, http.StatusInternalServerError)
 		return
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		http.Error(w, "City not found", http.StatusNotFound)
+		writeResponse(w, Response{Message: "City not found"}, http.StatusNotFound)
 		return
 	}
 
@@ -117,7 +132,7 @@ func populationHandler(w http.ResponseWriter, r *http.Request) {
 		Source City `json:"_source"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&doc); err != nil {
-		http.Error(w, "Failed to parse response", http.StatusInternalServerError)
+		writeResponse(w, Response{Message: "Failed to parse response"}, http.StatusInternalServerError)
 		return
 	}
 
