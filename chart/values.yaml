@@ -12,14 +12,14 @@ containerPort: 8080
 # Whole configuration block will not be used if elasticsearch.enabled is set to true
 # If elasticsearch.enabled is set to false, fill in with correct values.
 config:
-  elasticsearchUrl: "https://elasticsearch.totokwa.com"
-  elasticsearchUsername: "username"
-  elasticsearchPassword: "plaintext"
+  elasticsearchUrl: "https://elasticsearch:9200"
+  elasticsearchUsername: "elastic"
+  elasticsearchPassword: "changeme"
   existingSecret:
     # overrides elasticsearchPassword if enabled is set to true
-    enabled: true
-    secretName: "secretname"
-    passwordKey: "notelastic"
+    enabled: false
+    secretName: "secretname" # Change to existing secret name
+    passwordKey: "elastic"
 
 # Create additoinal init containers.
 initContainers: []

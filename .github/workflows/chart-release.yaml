@@ -1,0 +1,43 @@
+name: Package and Release Helm Chart
+
+on:
+  push:
+    tags:
+      - 'chart-v*'
+
+jobs:
+  lint:
+    name: Lint Helm Chart
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: v3.10.0
+      - name: Lint Chart
+        run: helm lint chart
+
+  release:
+    name: Package and Release Helm Chart
+    needs: lint
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: v3.10.0
+      - name: Get tag version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${TAG#charts-}"
+          echo "CHART_VERSION=$VERSION" >> "$GITHUB_ENV"
+      - name: Package Helm Chart
+        run: helm package chart --version ${{ CHART_VERSION }}
+      - name: Upload Helm Chart
+        run:
+          helm push chart/population-${{ CHART_VERSION }}.tgz \
+            oci://ghcr.io/${{ github.repository_owner }}/population-helm-charts
