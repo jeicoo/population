@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+
 jobs:
   test:
     name: Run Tests
@@ -53,3 +58,30 @@ jobs:
         with:
           name: image
           path: ${{ runner.temp }}/image.tar
+
+  publish:
+    name: Publish Application
+    runs-on: arc-population-set
+    needs: build
+    container: docker.io/totoki/selfhosted-runner:latest
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: image
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push image to GHCR
+        run: |
+          ls -l .
+          crane push \
+            ./image.tar \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
