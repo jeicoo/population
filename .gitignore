@@ -1,4 +1,6 @@
 .env
 /values.yaml
+es.yaml
 app
-/chart
+manifest.yaml
+eck-elasticsearch-0.15.0.tgz

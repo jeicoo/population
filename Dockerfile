@@ -1,9 +1,6 @@
 ARG GO_IMAGE=golang:1.24
 FROM ${GO_IMAGE} AS builder
 
-ARG APP_VERSION=dev
-ARG COMMIT_SHA=unknown
-
 ENV CGO_ENABLED=0 GOOS=linux
 
 WORKDIR /app
@@ -20,8 +17,14 @@ FROM scratch
 
 WORKDIR /
 
-COPY --from=builder /app/app /app
+COPY --from=builder /etc/passwd /etc/passwd
+COPY --from=builder /etc/group /etc/group
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+
+COPY --from=builder --chown=nobody:nogroup /app/app /app
 
 EXPOSE 8080
+
+USER nobody
 
 ENTRYPOINT ["/app"]
