@@ -2,10 +2,8 @@ name: Package and Release Helm Chart
 
 on:
   push:
-    branches:
-      - main
-    # tags:
-    #   - 'chart-v*'
+    tags:
+      - 'chart-v*'
 
 jobs:
   lint:
