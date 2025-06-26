@@ -34,6 +34,11 @@ func main() {
 		log.Fatalf("Error creating Elasticsearch client: %s", err)
 	}
 
+	_, err = es.Info()
+	if err != nil {
+		log.Fatalf("Error connecting to Elasticsearch: %s", err)
+	}
+
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/city", cityHandler)
 	http.HandleFunc("/population", populationHandler)
