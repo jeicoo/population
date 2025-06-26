@@ -2,8 +2,10 @@ name: Package and Release Helm Chart
 
 on:
   push:
-    tags:
-      - 'chart-v*'
+    branches:
+      - main
+    # tags:
+    #   - 'chart-v*'
 
 jobs:
   lint:
@@ -17,6 +19,7 @@ jobs:
           version: v3.10.0
       - name: Lint Chart
         run: |
+          helm repo add elastic https://helm.elastic.co/
           helm dependency build chart
           helm lint chart
 
@@ -39,6 +42,7 @@ jobs:
           echo "CHART_VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Package Helm Chart
         run: |
+          helm repo add elastic https://helm.elastic.co/        
           helm dependency build chart
           helm package chart --version ${{ env.CHART_VERSION }}
       - name: Upload Helm Chart
