@@ -27,8 +27,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
-      contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v3
       - name: Set up Helm
@@ -42,6 +40,9 @@ jobs:
           echo "CHART_VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Package Helm Chart
         run: |
+          helm registry login ghcr.io \
+            -u ${{ github.repository_owner }} \
+            -p ${{ secrets.GITHUB_TOKEN }}
           helm repo add elastic https://helm.elastic.co/        
           helm dependency build chart
           helm package chart --version ${{ env.CHART_VERSION }}
