@@ -10,8 +10,7 @@ jobs:
     name: Run Tests
     runs-on: arc-population-set
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -24,3 +23,33 @@ jobs:
           ES_URL: https://elasticsearch.totokwa.com
           ES_USERNAME: elastic
           ES_PASSWORD: ${{ secrets.ELASTICSEARCH_PASSWORD }}
+
+  build:
+    name: Build and Scan
+    needs: test
+    runs-on: arc-population-set
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: remote
+          endpoint: tcp://buildkitd:1234
+      - name: Build image with remote BuildKit
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: ./Dockerfile
+          outputs: type=docker,dest=${{ runner.temp }}/image.tar
+      - name: Scan image using Trivy
+        uses: aquasecurity/trivy-action@0.31.0
+        with:
+          input: ${{ runner.temp }}/image.tar
+          severity: 'CRITICAL,HIGH'
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: image
+          path: ${{ runner.temp }}/image.tar
