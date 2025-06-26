@@ -1,0 +1,133 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "chart.fullname" . }}
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "chart.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "chart.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if or .Values.elasticsearch.enabled .Values.initContainers }}
+      initContainers:
+      {{- if .Values.elasticsearch.enabled }}
+      - name: add-custom-ca
+        image: alpine:3.22
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 65532  # nobody user
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        command:
+          - sh
+          - -c
+          - |
+            cat /etc/ssl/certs/ca-certificates.crt /custom/ca.crt > /combined/ca-certificates.crt
+        volumeMounts:
+          - name: ca-bundle
+            mountPath: /combined
+          - name: eck-elasticsearch-ca
+            mountPath: /custom
+      {{- end }}
+      {{- with .Values.initContainers }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.containerPort }}
+              protocol: TCP
+          env:
+          {{- if .Values.elasticsearch.enabled }}
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/ca-certificates.crt
+          {{- end }}
+            - name: ES_URL
+              value: {{ include "chart.elasticsearchUrl" . | quote }}
+            - name: ES_USERNAME
+              value: {{ include "chart.elasticsearchUsername" . | quote }}
+          {{- if or .Values.config.existingSecret.enabled .Values.elasticsearch.enabled }}
+            - name: ES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "chart.esPasswordSecretName" . }}
+                  key: {{ include "chart.esPasswordKey" . }}
+          {{- else if .Values.config.elasticsearchPassword }}
+            - name: ES_PASSWORD
+              value: {{ .Values.config.elasticsearchPassword | quote }}
+          {{- end }}
+          {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          
+          {{- if or .Values.elasticsearch.enabled .Values.volumeMounts }}
+          volumeMounts:
+          {{- if .Values.elasticsearch.enabled }}
+            - name: ca-bundle
+              mountPath: /etc/ssl/certs
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- end }}
+      {{- if or .Values.elasticsearch.enabled .Values.volumes}}
+      volumes:
+      {{- if .Values.elasticsearch.enabled }}
+      - name: ca-bundle
+        emptyDir: {}
+      - name: eck-elasticsearch-ca
+        secret:
+          secretName: {{ printf "%s-eck-elasticsearch-es-http-certs-public" .Release.Name }}
+      {{- end }} 
+      {{- with .Values.volumes }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
