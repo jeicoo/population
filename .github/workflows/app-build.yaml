@@ -1,0 +1,32 @@
+name: Build and Test Application
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: arc-population-set
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Configure sysctl limits
+        run: |
+          sudo swapoff -a
+          sudo sysctl -w vm.swappiness=1
+          sudo sysctl -w fs.file-max=262144
+          sudo sysctl -w vm.max_map_count=262144
+      - name: Runs Elasticsearch
+        uses: elastic/elastic-github-actions/elasticsearch@master
+        with:
+          stack-version: 8.17.0
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24.4'
+      - name: Install dependencies
+        run: go mod download
+      - name: Generate test coverage
+        run: go test ./... -coverprofile=./cover.out -covermode=atomic
