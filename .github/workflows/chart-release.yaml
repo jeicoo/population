@@ -2,8 +2,8 @@ name: Package and Release Helm Chart
 
 on:
   push:
-    tags:
-      - 'chart-v*'
+    branches:
+      - main
 
 jobs:
   lint:
@@ -35,17 +35,17 @@ jobs:
           version: v3.10.0
       - name: Get tag version
         run: |
-          RAW_REF="${{ github.ref_name }}"   # e.g. "chart-v0.0.1"
+          RAW_REF="chart-v0.0.10"   # e.g. "chart-v0.0.1"
           VERSION="${RAW_REF#chart-}"        # strips "chart-"
           echo "CHART_VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Package Helm Chart
         run: |
-          helm registry login ghcr.io \
-            -u ${{ github.repository_owner }} \
-            -p ${{ secrets.GITHUB_TOKEN }}
           helm repo add elastic https://helm.elastic.co/        
           helm dependency build chart
           helm package chart --version ${{ env.CHART_VERSION }}
       - name: Upload Helm Chart
         run:
+          helm registry login ghcr.io \
+            -u ${{ github.repository_owner }} \
+            -p ${{ secrets.GITHUB_TOKEN }}
           helm push population-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/${{ github.repository_owner }}/population-helm-charts
