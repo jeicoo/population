@@ -100,28 +100,85 @@ Server starts on port `8080`.
 
 ---
 
-
 ## Deploying via Helm Chart
 
-The helm chart is packaged as an OCI compatible image and can be found here https://github.com/jeicoo/population/pkgs/container/population-helm-charts%2Fpopulation
+The Population Helm Chart is packaged as an OCI-compatible image and is available at:  
+🔗 [https://github.com/jeicoo/population/pkgs/container/population-helm-charts%2Fpopulation](https://github.com/jeicoo/population/pkgs/container/population-helm-charts%2Fpopulation)
+
+---
 
 ### Prerequisites
 
-Before deploying the helm chart, you must have access to a cluster which meets the following criteria:
+Before deploying, ensure the following are in place:
 
-- Kubernetes version 1.31 and up
-- CSI Driver configured for Persistence
-- Elastic Cloud on Kubernetes(ECK) operator installed in the cluster. [Read more](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s)
+- **Helm 3**
+- **Kubernetes** v1.31 or later
+- **CSI Driver** configured for persistent storage
+- **Elastic Cloud on Kubernetes (ECK)** operator installed  
+  📘 [ECK documentation](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s)
 
-### Deploying
+---
 
-1. Download the chart
-    ```bash
-    helm registry login ghcr.io
-    helm pull oci://ghcr.io/jeicoo/population-helm-charts/population --version v0.0.10
-    ```
+### Deployment
 
-2. Verify the chart
-    ```bash
-    helm show all oci://ghcr.io/jeicoo/population-helm-charts/population --version v0.0.10
-    ```
+To install or upgrade the Population Helm release:
+
+```bash
+helm upgrade --install population oci://ghcr.io/jeicoo/population-helm-charts/population --version 0.0.11
+```
+
+By default, this installs:
+
+- A **single-node Elasticsearch** instance with **self-signed TLS certificates**
+- The **Population services**, preconfigured to connect to the bundled Elasticsearch
+
+The chart includes the [`eck-elasticsearch`](https://github.com/elastic/cloud-on-k8s/tree/main/deploy/eck-stack/charts/eck-elasticsearch) subchart. For customization options, refer to its `values.yaml`.
+
+The application requires the following environment variables to connect to Elasticsearch:
+
+- `ES_URL`
+- `ES_USERNAME`
+- `ES_PASSWORD`
+
+You **do not** need to set these manually—the Helm chart injects default values automatically.
+
+---
+
+### Production Deployment
+
+> ⚠️ **Recommendation:** For production environments, use a separately managed Elasticsearch cluster.
+
+While the bundled single-node Elasticsearch is suitable for testing or development, it's not ideal for production. Storage services like Elasticsearch typically have separate lifecycles and scaling requirements, which are better handled independently from the application.
+
+To disable the built-in Elasticsearch:
+
+```yaml
+elasticsearch:
+  enabled: false
+```
+
+---
+
+### Configuring an External Elasticsearch Cluster
+
+When using an existing Elasticsearch deployment, provide the connection details via the Helm values:
+
+```yaml
+# Used only if elasticsearch.enabled is set to false
+config:
+  elasticsearchUrl: "https://elasticsearch:9200"
+  elasticsearchUsername: "elastic"
+  elasticsearchPassword: "changeme"
+
+  existingSecret:
+    enabled: false               # Set to true to use an existing Kubernetes Secret
+    secretName: "secretname"     # Replace with the name of your secret
+    passwordKey: "elastic"       # Key within the secret containing the password
+```
+
+---
+
+### Additional Configuration
+
+For more advanced settings and customization options, refer to the chart’s `values.yaml`:  
+📄 [values.yaml](https://github.com/jeicoo/population/blob/main/chart/values.yaml)
