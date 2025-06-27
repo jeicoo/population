@@ -44,7 +44,7 @@ jobs:
           helm dependency build chart
           helm package chart --version ${{ env.CHART_VERSION }}
       - name: Upload Helm Chart
-        run:
+        run: |
           helm registry login ghcr.io \
             -u ${{ github.repository_owner }} \
             -p ${{ secrets.GITHUB_TOKEN }}
