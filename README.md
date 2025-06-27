@@ -1,3 +1,4 @@
+> For helm chart deployment, go to [Deploying via Helm Chart](#deploying-via-helm-chart)
 # City Population Service
 
 This is a simple HTTP API written in Go that allows users to store and retrieve population data for cities using [Elasticsearch](https://www.elastic.co/elasticsearch/).
