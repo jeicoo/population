@@ -36,7 +36,7 @@ jobs:
       - name: Get tag version
         run: |
           RAW_REF="${{ github.ref_name }}"   # e.g. "chart-v0.0.1"
-          VERSION="${RAW_REF#chart-}"        # strips "chart-"
+          VERSION="${RAW_REF#chart-v}"        # strips "chart-"
           echo "CHART_VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Package Helm Chart
         run: |

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: population
-description: A Helm chart for Kubernetes
+description: Helm chart for deploying Population service with Elasticsearch
 
 # A chart can be either an 'application' or a 'library' chart.
 #

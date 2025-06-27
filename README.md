@@ -100,3 +100,28 @@ Server starts on port `8080`.
 
 ---
 
+
+## Deploying via Helm Chart
+
+The helm chart is packaged as an OCI compatible image and can be found here https://github.com/jeicoo/population/pkgs/container/population-helm-charts%2Fpopulation
+
+### Prerequisites
+
+Before deploying the helm chart, you must have access to a cluster which meets the following criteria:
+
+- Kubernetes version 1.31 and up
+- CSI Driver configured for Persistence
+- Elastic Cloud on Kubernetes(ECK) operator installed in the cluster. [Read more](https://www.elastic.co/docs/deploy-manage/deploy/cloud-on-k8s)
+
+### Deploying
+
+1. Download the chart
+    ```bash
+    helm registry login ghcr.io
+    helm pull oci://ghcr.io/jeicoo/population-helm-charts/population --version v0.0.10
+    ```
+
+2. Verify the chart
+    ```bash
+    helm show all oci://ghcr.io/jeicoo/population-helm-charts/population --version v0.0.10
+    ```
