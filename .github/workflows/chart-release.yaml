@@ -8,7 +8,7 @@ on:
 jobs:
   lint:
     name: Lint Helm Chart
-    runs-on: arc-population-set
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: Set up Helm
@@ -24,7 +24,7 @@ jobs:
   release:
     name: Package and Release Helm Chart
     needs: lint
-    runs-on: arc-population-set
+    runs-on: ubuntu-latest
     permissions:
       packages: write
     steps:
