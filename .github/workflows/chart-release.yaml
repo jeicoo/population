@@ -8,7 +8,7 @@ on:
 jobs:
   lint:
     name: Lint Helm Chart
-    runs-on: arch-population-set
+    runs-on: arc-population-set
     steps:
       - uses: actions/checkout@v3
       - name: Set up Helm
@@ -24,7 +24,7 @@ jobs:
   release:
     name: Package and Release Helm Chart
     needs: lint
-    runs-on: arch-population-set
+    runs-on: arc-population-set
     permissions:
       packages: write
     steps:
