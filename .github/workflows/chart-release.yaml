@@ -8,7 +8,7 @@ on:
 jobs:
   lint:
     name: Lint Helm Chart
-    runs-on: ubuntu-latest
+    runs-on: arch-population-set
     steps:
       - uses: actions/checkout@v3
       - name: Set up Helm
@@ -24,7 +24,7 @@ jobs:
   release:
     name: Package and Release Helm Chart
     needs: lint
-    runs-on: ubuntu-latest
+    runs-on: arch-population-set
     permissions:
       packages: write
     steps:
@@ -48,4 +48,5 @@ jobs:
           helm registry login ghcr.io \
             -u ${{ github.repository_owner }} \
             -p ${{ secrets.GITHUB_TOKEN }}
-          helm push population-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/${{ github.repository_owner }}/population-helm-charts
+          CHART_FILE=$(ls *.tgz)
+          helm push "$CHART_FILE" oci://ghcr.io/${{ github.repository_owner }}/population-helm-charts
